@@ -7,8 +7,9 @@
 //
 
 import UIKit
+import MessageKit
 
-class MessageThreadDetailTableViewController: UITableViewController {
+class MessageThreadDetailTableViewController: MessagesViewController {
 
     // MARK: - Properties
     
@@ -19,31 +20,14 @@ class MessageThreadDetailTableViewController: UITableViewController {
         super.viewDidLoad()
 
         title = messageThread?.title
+        messagesCollectionView.messagesDataSource = self
+        messagesCollectionView.messagesLayoutDelegate = self
+        messagesCollectionView.messagesDisplayDelegate = self
     }
     
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        
-        self.tableView.reloadData()
-    }
+
     
-    // MARK: - UITableViewDataSource
-
-    override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return messageThread?.messages.count ?? 0
-    }
-
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "MessageCell", for: indexPath)
-
-        let message = messageThread?.messages[indexPath.row]
-        
-        cell.textLabel?.text = message?.text
-        cell.detailTextLabel?.text = message?.displayName
-        
-        return cell
-    }
-
+   
     // MARK: - Navigation
 
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -54,4 +38,26 @@ class MessageThreadDetailTableViewController: UITableViewController {
             destinationVC.messageThread = messageThread
         }
     }    
+}
+
+extension MessageThreadDetailTableViewController: MessagesDataSource {
+    func currentSender() -> SenderType {
+        return Sender(id: "1", displayName: "Alex")
+    }
+    func numberOfSections(in messagesCollectionView: MessagesCollectionView) -> Int {
+        return messageThread!.messages.count
+    }
+    func messageForItem(at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> MessageType {
+        return messageThread!.messages[indexPath.section]
+    }
+}
+extension MessageThreadDetailTableViewController: MessagesDisplayDelegate {
+    func backgroundColor(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIColor {
+        if message.sender.displayName == "Alex" {
+            return .blue
+        }
+        return .green
+    }
+}
+extension MessageThreadDetailTableViewController: MessagesLayoutDelegate {
 }
