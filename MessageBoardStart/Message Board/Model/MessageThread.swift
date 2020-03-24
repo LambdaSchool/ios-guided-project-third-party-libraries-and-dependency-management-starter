@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import MessageKit
 
 class MessageThread: Codable, Equatable {
     
@@ -36,18 +37,73 @@ class MessageThread: Codable, Equatable {
     }
     
     
-    struct Message: Codable, Equatable {
-        
+    struct Message: Codable, Equatable , MessageType {
+    
+        // v1
         let text: String
         let timestamp: Date
         let displayName: String
         
-        init(text: String, displayName: String, timestamp: Date = Date()) {
+        // v2
+        var senderId: String
+        var sender: SenderType {
+            return Sender(senderId: senderId, displayName: displayName)
+        }
+        
+        var messageId: String
+        var sentDate: Date {
+            return timestamp
+        }
+        var kind: MessageKind {
+            return .text(text)
+        }
+        
+        init(text: String,
+             sender: Sender,
+             timestamp: Date = Date(),
+             messageId: String = UUID().uuidString ) {
+            
             self.text = text
-            self.displayName = displayName
+            self.displayName = sender.displayName
             self.timestamp = timestamp
+            self.messageId = messageId
+            self.senderId = sender.senderId
             
         }
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            
+            let text = try container.decode(String.self, forKey: .text)
+            let displayName = try container.decode(String.self, forKey: .displayName)
+            let timestamp = try container.decode(Date.self, forKey: .timestamp)
+            
+            var senderId: String = UUID().uuidString
+            if let decodedSenderId = try? container.decode(String.self, forKey: .senderId) {
+                senderId = decodedSenderId
+            }
+            let sender = Sender(senderId: senderId, displayName: displayName)
+            
+            self.init(text:text,sender: sender,timestamp:timestamp)
+            
+        }
+        
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            
+            try container.encode(displayName, forKey: .displayName)
+            try container.encode(senderId, forKey: .senderId)
+            try container.encode(timestamp, forKey: .timestamp)
+            try container.encode(text, forKey: .text)
+        }
+         
+        enum CodingKeys: String , CodingKey {
+            case displayName
+            case senderId
+            case text
+            case timestamp
+        }
+    
     }
     
     static func ==(lhs: MessageThread, rhs: MessageThread) -> Bool {
@@ -55,4 +111,11 @@ class MessageThread: Codable, Equatable {
             lhs.identifier == rhs.identifier &&
             lhs.messages == rhs.messages
     }
+}
+struct Sender: SenderType {
+    var senderId: String
+    
+    var displayName: String
+    
+    
 }
