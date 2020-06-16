@@ -36,6 +36,8 @@ class MessageThread: Codable, Equatable {
     }
     
     
+    
+    
     struct Message: Codable, Equatable {
         
         let text: String
